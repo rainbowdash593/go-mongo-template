@@ -1,0 +1,42 @@
+version: '3.9'
+services:
+
+  users-service:
+    build:
+      context: ..
+      dockerfile: ./docker/local/Dockerfile
+    container_name: users-service
+    image: example/users-service
+    restart: unless-stopped
+    environment:
+      APP_ENV: "LOCAL"
+    env_file:
+      - ../.env.local
+    entrypoint: sh -c "./main"
+    ports:
+      - "8080:8080"
+    depends_on:
+      mongodb-users-service:
+        condition: service_healthy
+
+  mongodb-users-service:
+    image: mongo:latest
+    container_name: mongodb-users-service
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: user
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: users
+    ports:
+      - 27017:27017
+    volumes:
+      - users-service-data:/data/db
+    healthcheck:
+      test: [ "CMD", "mongosh", "mongodb://user:password@mongodb-users-service:27017", "--eval", "db.runCommand({ping: 1})" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+
+volumes:
+  users-service-data:
+    driver: local

@@ -1,0 +1,47 @@
+version: '3.9'
+services:
+
+  users-service-debug:
+    build:
+      context: ..
+      dockerfile: ./docker/debug/Dockerfile
+    container_name: users-service-debug
+    image: example/users-service-debug
+    restart: unless-stopped
+    entrypoint: sh -c "/app/dlv --listen=:$${DELVE_PORT} --headless=true --api-version=2 --accept-multiclient exec /app/main"
+    environment:
+      APP_ENV: "LOCAL"
+    env_file:
+      - ../.env.local
+    ports:
+      - "8080:8080"
+      - "40000:40000"
+    security_opt:
+      - "seccomp:unconfined"
+    cap_add:
+      - SYS_PTRACE
+    depends_on:
+      postgres-users-service:
+        condition: service_healthy
+
+  mongodb-users-service:
+    image: mongo:latest
+    container_name: mongodb-users-service
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: user
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: users
+    ports:
+      - 27017:27017
+    volumes:
+      - users-service-data:/data/db
+    healthcheck:
+      test: [ "CMD", "mongosh", "mongodb://user:password@mongodb-users-service:27017", "--eval", "db.runCommand({ping: 1})" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+
+volumes:
+  users-service-data:
+    driver: local
