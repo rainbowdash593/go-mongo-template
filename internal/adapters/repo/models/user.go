@@ -2,7 +2,6 @@ package models
 
 import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"gorm.io/gorm"
 	"time"
 )
 
@@ -12,5 +11,5 @@ type User struct {
 	Email     string             `bson:"email"`
 	CreatedAt time.Time          `bson:"created_at"`
 	UpdatedAt time.Time          `bson:"updated_at"`
-	DeletedAt gorm.DeletedAt     `bson:"deleted_at"`
+	DeletedAt time.Time          `bson:"deleted_at,omitempty"`
 }
